@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoHands - Sign Language & Speech to Text</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #5E35B1;
+            --primary-dark: #4527A0;
+            --secondary: #7E57C2;
+            --accent: #B388FF;
+            --light: #F5F5F5;
+            --dark: #263238;
+            --success: #43A047;
+            --warning: #FFB300;
+            --danger: #E53935;
+            --radius: 12px;
+            --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+
+        .logo-text {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tagline {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .mode-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid var(--primary);
+            background-color: transparent;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .feature-container {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Sign to Text Specific Styles */
+        .sign-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-btn {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            background-color: #EDE7F6;
+            color: var(--primary-dark);
+        }
+
+        .option-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background-color: #f0f0f0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hand-guidance {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 3px dashed rgba(67, 97, 238, 0.5);
+            pointer-events: none;
+        }
+
+        /* Audio to Text Specific Styles */
+        .audio-visualizer {
+            width: 100%;
+            height: 100px;
+            background-color: #EDE7F6;
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-end;
+            padding: 1rem;
+            gap: 4px;
+        }
+
+        .visualizer-bar {
+            flex: 1;
+            background-color: var(--primary);
+            border-radius: 4px;
+            min-height: 4px;
+            transition: height 0.1s ease;
+        }
+
+        /* Common Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(94, 53, 177, 0.3);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(94, 53, 177, 0.1);
+        }
+
+        .result-container {
+            background-color: #EDE7F6;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            min-height: 120px;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+        }
+
+        .empty-state {
+            color: #666;
+            font-style: italic;
+        }
+
+        /* History Section */
+        .history-container {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .history-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .history-icon {
+            color: var(--primary);
+        }
+
+        .history-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .mode-selector {
+                flex-direction: column;
+            }
+            
+            .sign-options {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-hands"></i>
+                </div>
+                <div class="logo-text">EchoHands</div>
+            </div>
+            <p class="tagline">Bridging communication through sign language and voice</p>
+        </header>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" id="signToTextBtn">
+                <i class="fas fa-hands"></i> Sign to Text
+            </button>
+            <button class="mode-btn" id="audioToTextBtn">
+                <i class="fas fa-microphone"></i> Audio to Text
+            </button>
+        </div>
+
+        <!-- Sign to Text Section -->
+        <div class="feature-container" id="signToTextSection">
+            <h2>Sign to Text Conversion</h2>
+            
+            <div class="sign-options">
+                <button class="option-btn active" id="letterOptionBtn">
+                    <i class="fas fa-font"></i> Letter
+                </button>
+                <button class="option-btn" id="wordOptionBtn">
+                    <i class="fas fa-spell-check"></i> Word
+                </button>
+            </div>
+            
+            <div class="camera-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <div class="hand-guidance"></div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="startCameraBtn">
+                    <i class="fas fa-video"></i> Start Camera
+                </button>
+                <button class="btn btn-outline" id="captureSignBtn" disabled>
+                    <i class="fas fa-hand-paper"></i> Capture Sign
+                </button>
+                <button class="btn btn-outline" id="clearSignBtn" disabled>
+                    <i class="fas fa-trash-alt"></i> Clear
+                </button>
+            </div>
+            
+            <div class="result-container">
+                <h3>Recognized Text:</h3>
+                <div class="result-text" id="signResultText">
+                    <span class="empty-state">Your recognized text will appear here...</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="copySignTextBtn" disabled>
+                    <i class="fas fa-copy"></i> Copy Text
+                </button>
+                <button class="btn btn-outline" id="speakSignTextBtn" disabled>
+                    <i class="fas fa-volume-up"></i> Speak Text
+                </button>
+                <button class="btn btn-outline" id="saveSignTextBtn" disabled>
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+
+        <!-- Audio to Text Section (hidden by default) -->
+        <div class="feature-container" id="audioToTextSection" style="display: none;">
+            <h2>Audio to Text Conversion</h2>
+            
+            <div class="audio-visualizer" id="audioVisualizer">
+                <!-- Visualizer bars will be added dynamically -->
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="startRecordingBtn">
+                    <i class="fas fa-microphone"></i> Start Recording
+                </button>
+                <button class="btn btn-outline" id="stopRecordingBtn" disabled>
+                    <i class="fas fa-stop"></i> Stop Recording
+                </button>
+            </div>
+            
+            <div class="result-container">
+                <h3>Transcribed Text:</h3>
+                <div class="result-text" id="audioResultText">
+                    <span class="empty-state">Your transcribed text will appear here...</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="copyAudioTextBtn" disabled>
+                    <i class="fas fa-copy"></i> Copy Text
+                </button>
+                <button class="btn btn-outline" id="speakAudioTextBtn" disabled>
+                    <i class="fas fa-volume-up"></i> Speak Text
+                </button>
+                <button class="btn btn-outline" id="saveAudioTextBtn" disabled>
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="history-container">
+            <div class="history-header">
+                <h2>Recent Conversions</h2>
+                <button class="btn btn-outline" id="clearHistoryBtn">
+                    <i class="fas fa-trash-alt"></i> Clear All
+                </button>
+            </div>
+            <div id="historyList">
+                <!-- History items will be added dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const signToTextBtn = document.getElementById('signToTextBtn');
+        const audioToTextBtn = document.getElementById('audioToTextBtn');
+        const signToTextSection = document.getElementById('signToTextSection');
+        const audioToTextSection = document.getElementById('audioToTextSection');
+        
+        const letterOptionBtn = document.getElementById('letterOptionBtn');
+        const wordOptionBtn = document.getElementById('wordOptionBtn');
+        
+        const videoElement = document.getElementById('videoElement');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const captureSignBtn = document.getElementById('captureSignBtn');
+        const clearSignBtn = document.getElementById('clearSignBtn');
+        const signResultText = document.getElementById('signResultText');
+        const copySignTextBtn = document.getElementById('copySignTextBtn');
+        const speakSignTextBtn = document.getElementById('speakSignTextBtn');
+        const saveSignTextBtn = document.getElementById('saveSignTextBtn');
+        
+        const startRecordingBtn = document.getElementById('startRecordingBtn');
+        const stopRecordingBtn = document.getElementById('stopRecordingBtn');
+        const audioResultText = document.getElementById('audioResultText');
+        const copyAudioTextBtn = document.getElementById('copyAudioTextBtn');
+        const speakAudioTextBtn = document.getElementById('speakAudioTextBtn');
+        const saveAudioTextBtn = document.getElementById('saveAudioTextBtn');
+        
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const historyList = document.getElementById('historyList');
+        const audioVisualizer = document.getElementById('audioVisualizer');
+        
+        // Initialize visualizer bars
+        for (let i = 0; i < 20; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'visualizer-bar';
+            audioVisualizer.appendChild(bar);
+        }
+        const visualizerBars = document.querySelectorAll('.visualizer-bar');
+        
+        // App State
+        let currentMode = 'signToText';
+        let currentSignOption = 'letter';
+        let stream = null;
+        let recognition;
+        let isRecording = false;
+        let visualizerInterval = null;
+        let conversions = [];
+        
+        // Mode Switching
+        signToTextBtn.addEventListener('click', () => {
+            currentMode = 'signToText';
+            signToTextSection.style.display = 'block';
+            audioToTextSection.style.display = 'none';
+            signToTextBtn.classList.add('active');
+            audioToTextBtn.classList.remove('active');
+            stopAudioRecording();
+        });
+        
+        audioToTextBtn.addEventListener('click', () => {
+            currentMode = 'audioToText';
+            signToTextSection.style.display = 'none';
+            audioToTextSection.style.display = 'block';
+            signToTextBtn.classList.remove('active');
+            audioToTextBtn.classList.add('active');
+            stopCamera();
+            initializeSpeechRecognition();
+        });
+        
+        // Sign Option Switching
+        letterOptionBtn.addEventListener('click', () => {
+            currentSignOption = 'letter';
+            letterOptionBtn.classList.add('active');
+            wordOptionBtn.classList.remove('active');
+            updateEmptyState();
+        });
+        
+        wordOptionBtn.addEventListener('click', () => {
+            currentSignOption = 'word';
+            letterOptionBtn.classList.remove('active');
+            wordOptionBtn.classList.add('active');
+            updateEmptyState();
+        });
+        
+        // Camera Functionality
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                videoElement.srcObject = stream;
+                startCameraBtn.disabled = true;
+                captureSignBtn.disabled = false;
+                clearSignBtn.disabled = false;
+                updateEmptyState();
+            } catch (err) {
+                console.error("Camera error:", err);
+                showResultMessage(signResultText, "Could not access camera. Please check permissions.", "error");
+            }
+        });
+        
+        captureSignBtn.addEventListener('click', () => {
+            // Simulate sign recognition
+            showResultMessage(signResultText, "Processing sign...", "info");
+            
+            setTimeout(() => {
+                let result;
+                if (currentSignOption === 'letter') {
+                    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                    result = letters[Math.floor(Math.random() * letters.length)];
+                } else {
+                    const words = ['HELLO', 'THANK YOU', 'PLEASE', 'HELP', 'WATER', 'FOOD', 'YES', 'NO'];
+                    result = words[Math.floor(Math.random() * words.length)];
+                }
+                
+                displayResult(signResultText, result);
+                copySignTextBtn.disabled = false;
+                speakSignTextBtn.disabled = false;
+                saveSignTextBtn.disabled = false;
+                addToHistory(result, 'Sign to Text', currentSignOption === 'letter' ? 'letter' : 'word');
+            }, 1500);
+        });
+        
+        clearSignBtn.addEventListener('click', () => {
+            clearResult(signResultText);
+            copySignTextBtn.disabled = true;
+            speakSignTextBtn.disabled = true;
+            saveSignTextBtn.disabled = true;
+        });
+        
+        // Audio to Text Functionality
+        function initializeSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                console.error("Speech Recognition API not supported in this browser");
+                showResultMessage(audioResultText, 
+                    "Speech recognition not supported in your browser", 
+                    "error");
+                return;
+            }
+            
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            
+            recognition.onstart = () => {
+                isRecording = true;
+                startRecordingBtn.disabled = true;
+                stopRecordingBtn.disabled = false;
+                showResultMessage(audioResultText, "Listening... Speak now", "info");
+                animateVisualizer();
+            };
+            
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                if (finalTranscript) {
+                    displayResult(audioResultText, finalTranscript);
+                    copyAudioTextBtn.disabled = false;
+                    speakAudioTextBtn.disabled = false;
+                    saveAudioTextBtn.disabled = false;
+                    addToHistory(finalTranscript, 'Audio to Text');
+                } else if (interimTranscript) {
+                    audioResultText.innerHTML = interimTranscript + 
+                        '<span class="empty-state">...</span>';
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                console.error("Recognition error:", event.error);
+                stopAudioRecording();
+                showResultMessage(audioResultText, 
+                    "Error: " + event.error, 
+                    "error");
+            };
+            
+            recognition.onend = () => {
+                if (isRecording) {
+                    // Automatically restart recording if still in recording state
+                    recognition.start();
+                }
+            };
+        }
+        
+        startRecordingBtn.addEventListener('click', () => {
+            if (!recognition) {
+                initializeSpeechRecognition();
+            }
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error("Recognition start error:", e);
+                showResultMessage(audioResultText, 
+                    "Error starting microphone: " + e.message, 
+                    "error");
+            }
+        });
+        
+        stopRecordingBtn.addEventListener('click', stopAudioRecording);
+        
+        function stopAudioRecording() {
+            if (recognition) {
+                isRecording = false;
+                recognition.stop();
+            }
+            startRecordingBtn.disabled = false;
+            stopRecordingBtn.disabled = true;
+            stopVisualizer();
+        }
+        
+        function animateVisualizer() {
+            stopVisualizer();
+            visualizerInterval = setInterval(() => {
+                visualizerBars.forEach(bar => {
+                    const randomHeight = Math.floor(Math.random() * 80) + 10;
+                    bar.style.height = `${randomHeight}px`;
+                });
+            }, 100);
+        }
+        
+        function stopVisualizer() {
+            if (visualizerInterval) {
+                clearInterval(visualizerInterval);
+                visualizerInterval = null;
+                visualizerBars.forEach(bar => {
+                    bar.style.height = '4px';
+                });
+            }
+        }
+        
+        // Text-to-Speech Functionality
+        speakSignTextBtn.addEventListener('click', () => {
+            if (!signResultText.querySelector('.empty-state')) {
+                const utterance = new SpeechSynthesisUtterance(signResultText.textContent);
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+        
+        speakAudioTextBtn.addEventListener('click', () => {
+            if (!audioResultText.querySelector('.empty-state')) {
+                const utterance = new SpeechSynthesisUtterance(audioResultText.textContent);
+                window.speechSynthesis.speak(utterance);
+            }
+        });
+        
+        // Utility Functions
+        function showResultMessage(element, message, type = 'info') {
+            const color = type === 'error' ? 'var(--danger)' : 'var(--primary)';
+            element.innerHTML = `<span style="color: ${color}">${message}</span>`;
+        }
+        
+        function displayResult(element, text) {
+            element.innerHTML = text;
+        }
+        
+        function clearResult(element) {
+            element.innerHTML = '<span class="empty-state">' + 
+                (currentMode === 'signToText' ? 
+                    (currentSignOption === 'letter' ? 'Show a letter sign...' : 'Show a word sign...') : 
+                    'Your transcribed text will appear here...') + 
+                '</span>';
+        }
+        
+        function updateEmptyState() {
+            if (currentMode === 'signToText') {
+                if (signResultText.querySelector('.empty-state')) {
+                    signResultText.innerHTML = '<span class="empty-state">' + 
+                        (currentSignOption === 'letter' ? 'Show a letter sign...' : 'Show a word sign...') + 
+                        '</span>';
+                }
+            }
+        }
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+                startCameraBtn.disabled = false;
+                captureSignBtn.disabled = true;
+                clearSignBtn.disabled = true;
+            }
+        }
+        
+        // History Functions
+        function addToHistory(text, type, subType = null) {
+            const conversion = {
+                id: Date.now(),
+                text: text,
+                type: type,
+                subType: subType,
+                timestamp: new Date()
+            };
+            
+            conversions.unshift(conversion);
+            renderHistory();
+            
+            // Store in localStorage
+            localStorage.setItem('echoHandsHistory', JSON.stringify(conversions));
+        }
+        
+        function renderHistory() {
+            historyList.innerHTML = '';
+            
+            if (conversions.length === 0) {
+                historyList.innerHTML = '<div class="empty-state" style="padding: 1rem; text-align: center;">No conversions yet</div>';
+                return;
+            }
+            
+            conversions.slice(0, 5).forEach(conversion => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.dataset.id = conversion.id;
+                
+                const icon = conversion.type === 'Sign to Text' ? 
+                    (conversion.subType === 'letter' ? 'fa-font' : 'fa-spell-check') : 'fa-microphone';
+                
+                const timeString = conversion.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                historyItem.innerHTML = `
+                    <div class="history-content">
+                        <i class="fas ${icon} history-icon"></i>
+                        <div>
+                            <div>${conversion.text}</div>
+                            <div style="font-size: 0.8rem; color: #666;">${conversion.type} ${conversion.subType ? `(${conversion.subType})` : ''}</div>
+                        </div>
+                    </div>
+                    <div class="history-time">${timeString}</div>
+                `;
+                
+                historyList.appendChild(historyItem);
+            });
+        }
+        
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to clear all history?")) {
+                conversions = [];
+                localStorage.removeItem('echoHandsHistory');
+                renderHistory();
+            }
+        });
+        
+        // Copy Functions
+        copySignTextBtn.addEventListener('click', () => {
+            if (!signResultText.querySelector('.empty-state')) {
+                navigator.clipboard.writeText(signResultText.textContent);
+                alert("Text copied to clipboard!");
+            }
+        });
+        
+        copyAudioTextBtn.addEventListener('click', () => {
+            if (!audioResultText.querySelector('.empty-state')) {
+                navigator.clipboard.writeText(audioResultText.textContent);
+                alert("Text copied to clipboard!");
+            }
+        });
+        
+        // Save Functions (simulated)
+        saveSignTextBtn.addEventListener('click', () => {
+            if (!signResultText.querySelector('.empty-state')) {
+                alert("Saved: " + signResultText.textContent);
+            }
+        });
+        
+        saveAudioTextBtn.addEventListener('click', () => {
+            if (!audioResultText.querySelector('.empty-state')) {
+                alert("Saved: " + audioResultText.textContent);
+            }
+        });
+        
+        // Load history from localStorage
+        function loadHistory() {
+            const savedHistory = localStorage.getItem('echoHandsHistory');
+            if (savedHistory) {
+                conversions = JSON.parse(savedHistory);
+                renderHistory();
+            }
+        }
+        
+        // Initialize
+        signToTextBtn.click();
+        letterOptionBtn.click();
+        loadHistory();
+    </script>
+</body>
+</html>
