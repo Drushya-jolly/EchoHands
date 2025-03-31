@@ -50,6 +50,8 @@ def Bb(list, hand_type):
 
     return False
 
+
+
 def Yy(list, hand_type):
     len = math.hypot(list[4][1] - list[6][1], list[4][2] - list[6][2])
     if(list[4][2] < list[2][2] and list[20][2] < list [17][2] and len > 30):
