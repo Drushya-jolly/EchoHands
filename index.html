@@ -456,6 +456,8 @@
         const clearHistoryBtn = document.getElementById('clearHistoryBtn');
         const historyList = document.getElementById('historyList');
         const audioVisualizer = document.getElementById('audioVisualizer');
+
+        const API_ENDPOINT = 'http://127.0.0.1:5000';
         
         // Initialize visualizer bars
         for (let i = 0; i < 20; i++) {
@@ -511,46 +513,65 @@
         
         // Camera Functionality
         startCameraBtn.addEventListener('click', async () => {
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: {
-                        facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                });
-                videoElement.srcObject = stream;
-                startCameraBtn.disabled = true;
-                captureSignBtn.disabled = false;
-                clearSignBtn.disabled = false;
-                updateEmptyState();
-            } catch (err) {
-                console.error("Camera error:", err);
-                showResultMessage(signResultText, "Could not access camera. Please check permissions.", "error");
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: {
+                facingMode: 'user',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
             }
         });
-        
-        captureSignBtn.addEventListener('click', () => {
-            // Simulate sign recognition
-            showResultMessage(signResultText, "Processing sign...", "info");
-            
-            setTimeout(() => {
-                let result;
-                if (currentSignOption === 'letter') {
-                    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                    result = letters[Math.floor(Math.random() * letters.length)];
-                } else {
-                    const words = ['HELLO', 'THANK YOU', 'PLEASE', 'HELP', 'WATER', 'FOOD', 'YES', 'NO'];
-                    result = words[Math.floor(Math.random() * words.length)];
-                }
-                
-                displayResult(signResultText, result);
+        videoElement.srcObject = stream;
+        startCameraBtn.disabled = true;
+        captureSignBtn.disabled = false;
+        clearSignBtn.disabled = false;
+        updateEmptyState();
+    } catch (err) {
+        console.error("Camera error:", err);
+        showResultMessage(signResultText, "Could not access camera. Please check permissions.", "error");
+    }
+});
+
+captureSignBtn.addEventListener('click', () => {
+    showResultMessage(signResultText, "Processing sign...", "info");
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+        const formData = new FormData();
+        formData.append('image', blob, 'hand.jpg');
+
+        fetch(`${API_ENDPOINT}/detect`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("🔹 Full response from server:", data);  // Debugging log
+            if (data.error) {
+                console.error("❌ API Error:", data.error);
+                showResultMessage(signResultText, "Error: " + data.error, "error");
+            } else {
+                const detectedSign = data.sign;
+                showResultMessage(signResultText, "Detected Sign: " + detectedSign, "success");
+                // Enable buttons for interaction with the result
                 copySignTextBtn.disabled = false;
                 speakSignTextBtn.disabled = false;
                 saveSignTextBtn.disabled = false;
-                addToHistory(result, 'Sign to Text', currentSignOption === 'letter' ? 'letter' : 'word');
-            }, 1500);
+                // Add to history
+                addToHistory(detectedSign, 'Sign to Text', currentSignOption);
+            }
+        })
+        .catch(error => {
+            console.error("❌ Fetch Error:", error);
+            showResultMessage(signResultText, "Error connecting to sign detection service. Is the server running?", "error");
         });
+    }, 'image/jpeg', 0.9);  // Using high quality JPEG for better recognition
+});
         
         clearSignBtn.addEventListener('click', () => {
             clearResult(signResultText);
